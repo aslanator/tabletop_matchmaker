@@ -2,7 +2,7 @@ package commands
 
 import (
 	"strings"
-	"tabletop_matchmaker/commands/help"
+	"tabletop_matchmaker/internal/commands/help"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )

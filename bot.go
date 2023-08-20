@@ -2,23 +2,16 @@ package main
 
 import (
 	"log"
-	"os"
-	"tabletop_matchmaker/commands"
+	"tabletop_matchmaker/configs"
+	"tabletop_matchmaker/internal/commands"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	env := configs.NewEnviroment()
 
-	apiKey := os.Getenv("API_KEY")
-	botName := os.Getenv("BOT_NAME")
-
-	bot, err := tgbotapi.NewBotAPI(apiKey)
+	bot, err := tgbotapi.NewBotAPI(env.ApiKey)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -35,7 +28,7 @@ func main() {
 	controller := commands.Controller{}
 
 	for update := range updates {
-		msg := controller.HandleUpdate(update, botName)
+		msg := controller.HandleUpdate(update, env.BotName)
 
 		if msg == nil {
 			continue
