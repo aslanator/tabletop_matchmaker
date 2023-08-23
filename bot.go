@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"tabletop_matchmaker/configs"
+	"tabletop_matchmaker/helpers/errors"
 	"tabletop_matchmaker/internal/commands"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -12,9 +13,7 @@ func main() {
 	env := configs.NewEnviroment()
 
 	bot, err := tgbotapi.NewBotAPI(env.ApiKey)
-	if err != nil {
-		log.Panic(err)
-	}
+	errors.FatalOnError(err, "Failed to validate the telegram API token")
 
 	bot.Debug = true
 
