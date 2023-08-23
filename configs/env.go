@@ -1,8 +1,8 @@
 package configs
 
 import (
-	"log"
 	"os"
+	"tabletop_matchmaker/helpers/errors"
 
 	"github.com/joho/godotenv"
 )
@@ -14,9 +14,7 @@ type Enviroment struct {
 
 func NewEnviroment() Enviroment {
 	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file. ", err)
-	}
+	errors.FatalOnError(err, "Error loading .env file. ")
 
 	env := Enviroment{}
 	env.ApiKey = os.Getenv("API_KEY")
