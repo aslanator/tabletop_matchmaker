@@ -3,8 +3,10 @@ package main
 import (
 	"log"
 	"tabletop_matchmaker/configs"
-	"tabletop_matchmaker/helpers/errors"
 	"tabletop_matchmaker/internal/commands"
+	"tabletop_matchmaker/internal/commands/help"
+	"tabletop_matchmaker/internal/commands/link"
+	"tabletop_matchmaker/internal/helpers/errors"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -16,6 +18,8 @@ func main() {
 	errors.FatalOnError(err, "Failed to validate the telegram API token")
 
 	bot.Debug = true
+
+	configCommands(bot)
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
@@ -37,4 +41,18 @@ func main() {
 			log.Println(err)
 		}
 	}
+}
+
+func configCommands(bot *tgbotapi.BotAPI) {
+	help := tgbotapi.BotCommand{
+		Command:     help.Name(),
+		Description: "Возможно, это поможет, но я бы на это не рассчитывал",
+	}
+	link := tgbotapi.BotCommand{
+		Command:     link.Name(),
+		Description: "Присоединить аккаунт BGG",
+	}
+
+	commandsConfig := tgbotapi.NewSetMyCommands(help, link)
+	bot.Send(commandsConfig)
 }
