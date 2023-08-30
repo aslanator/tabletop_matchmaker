@@ -31,15 +31,15 @@ func (c Controller) handleMessage(msg *tgbotapi.Message, botName string) []tgbot
 	}
 
 	command := msg.Command()
-	commandWithAd := msg.CommandWithAt()
-	if command != commandWithAd {
-		commandBotName := commandWithAd[strings.Index(commandWithAd, "@")+1:]
+	commandWithAt := msg.CommandWithAt()
+	if command != commandWithAt {
+		commandBotName := commandWithAt[strings.Index(commandWithAt, "@")+1:]
 		if commandBotName != botName {
 			return nil
 		}
 	}
 
-	commandHandler, err := c.getCommandHandler(msg.Command())
+	commandHandler, err := c.getCommandHandler(msg.Command(), msg.Chat.Type)
 	if err != nil {
 		return nil
 	}
@@ -52,7 +52,7 @@ func (c Controller) handleCallbackQuery(update tgbotapi.Update) []tgbotapi.Chatt
 	data := strings.Split(update.CallbackQuery.Data, "|")
 	command := data[0]
 
-	commandHandler, err := c.getCommandHandler(command)
+	commandHandler, err := c.getCommandHandler(command, update.Message.Chat.Type)
 	if err != nil {
 		return nil
 	}
@@ -60,10 +60,25 @@ func (c Controller) handleCallbackQuery(update tgbotapi.Update) []tgbotapi.Chatt
 	return commandHandler.Callback(update.CallbackQuery)
 }
 
-func (c Controller) getCommandHandler(command string) (Command, error) {
+func (c Controller) getCommandHandler(command string, chatType string) (Command, error) {
+	switch chatType {
+	case "private":
+		return c.getPrivateCommandHandler(command)
+	default:
+		return c.getDefaultCommandHandler(command)
+	}
+}
+
+func (c Controller) getDefaultCommandHandler(command string) (Command, error) {
 	switch command {
 	case help.Name():
 		return help.Help{}, nil
+	}
+	return nil, errors.New("unknown command")
+}
+
+func (c Controller) getPrivateCommandHandler(command string) (Command, error) {
+	switch command {
 	case link.Name():
 		return link.Link{}, nil
 	}
