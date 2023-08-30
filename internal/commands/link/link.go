@@ -14,10 +14,12 @@ import (
 type Link struct {
 }
 
-func (link Link) Run(msg *tgbotapi.Message) tgbotapi.Chattable {
+func (link Link) Run(msg *tgbotapi.Message) []tgbotapi.Chattable {
 	attributesStr := msg.CommandArguments()
 	attributes := strings.Split(attributesStr, " ")
-	if attributes[0] == "--confirm" {
+	if len(attributes) != 1 {
+		text := "Ты чё, пёс?!"
+		return []tgbotapi.Chattable{tgbotapi.NewMessage(msg.Chat.ID, text)}
 	}
 
 	bgg := gobgg.NewBGGClient()
@@ -25,14 +27,15 @@ func (link Link) Run(msg *tgbotapi.Message) tgbotapi.Chattable {
 	if err != nil {
 		log.Println(err)
 		text := "Бип-буп, глупый робот всё сломал"
-		return tgbotapi.NewMessage(msg.Chat.ID, text)
+		return []tgbotapi.Chattable{tgbotapi.NewMessage(msg.Chat.ID, text)}
 	}
 	errors.Vd(user)
 
 	text := "Ебало узнаёшь, пёс?"
 	res := tgbotapi.NewMessage(msg.Chat.ID, text)
 	res.ReplyMarkup = genCofirmation(attributes[0])
-	return res
+	res.ReplyToMessageID = msg.MessageID
+	return []tgbotapi.Chattable{res}
 }
 
 func genCofirmation(login string) tgbotapi.InlineKeyboardMarkup {
@@ -43,10 +46,15 @@ func genCofirmation(login string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(row)
 }
 
-func (link Link) Callback(cq *tgbotapi.CallbackQuery) tgbotapi.Chattable {
-	return nil
-	text := "Не извольте волноваться, всё заебись"
-	return tgbotapi.NewMessage(cq.ChatInstance, text)
+func (link Link) Callback(cq *tgbotapi.CallbackQuery) []tgbotapi.Chattable {
+	data := strings.Split(cq.Data, "|")
+	text := ""
+	if data[1] == "confirm" {
+		text = "Не извольте волноваться"
+	} else {
+		text = "Извольте волновоаться"
+	}
+	return []tgbotapi.Chattable{tgbotapi.NewMessage(cq.Message.Chat.ID, text)}
 }
 
 func Name() string {

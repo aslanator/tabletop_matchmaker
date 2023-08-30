@@ -31,14 +31,16 @@ func main() {
 	controller := commands.Controller{}
 
 	for update := range updates {
-		msg := controller.HandleUpdate(update, env.BotName)
+		msgs := controller.HandleUpdate(update, env.BotName)
 
-		if msg == nil {
+		if msgs == nil {
 			continue
 		}
 
-		if _, err := bot.Send(msg); err != nil {
-			log.Println(err)
+		for _, msg := range msgs {
+			if _, err := bot.Send(msg); err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
