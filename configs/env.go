@@ -2,7 +2,7 @@ package configs
 
 import (
 	"os"
-	"tabletop_matchmaker/helpers/errors"
+	"tabletop_matchmaker/internal/helpers/errors"
 
 	"github.com/joho/godotenv"
 )
