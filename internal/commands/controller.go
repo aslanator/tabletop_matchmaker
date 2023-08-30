@@ -50,9 +50,14 @@ func (c Controller) handleMessage(msg *tgbotapi.Message, botName string) []tgbot
 func (c Controller) handleCallbackQuery(update tgbotapi.Update) []tgbotapi.Chattable {
 	log.Println(update)
 	data := strings.Split(update.CallbackQuery.Data, "|")
+
+	if len(data) == 0 {
+		return nil
+	}
+
 	command := data[0]
 
-	commandHandler, err := c.getCommandHandler(command, update.Message.Chat.Type)
+	commandHandler, err := c.getCommandHandler(command, update.CallbackQuery.Message.Chat.Type)
 	if err != nil {
 		return nil
 	}

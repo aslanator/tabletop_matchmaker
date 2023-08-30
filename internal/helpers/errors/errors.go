@@ -11,6 +11,11 @@ func FatalOnError(err error, msg string) {
 	}
 }
 
+func UnexpectedChatError(err error) string {
+	log.Println(err)
+	return "Неожиданная ошибка. Пожалуйста свяжитесь с администрацией"
+}
+
 func Vd(v any) {
 	fmt.Printf("%+v\n", v)
 }
