@@ -6,6 +6,7 @@ import (
 	"tabletop_matchmaker/internal/commands"
 	"tabletop_matchmaker/internal/commands/help"
 	"tabletop_matchmaker/internal/commands/link"
+	"tabletop_matchmaker/internal/db"
 	"tabletop_matchmaker/internal/helpers/errors"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -28,20 +29,10 @@ func main() {
 
 	updates := bot.GetUpdatesChan(u)
 
-	controller := commands.Controller{}
+	controller := commands.Controller{Database: db.GetDB()}
 
 	for update := range updates {
-		msgs := controller.HandleUpdate(update, env.BotName)
-
-		if msgs == nil {
-			continue
-		}
-
-		for _, msg := range msgs {
-			if _, err := bot.Send(msg); err != nil {
-				log.Println(err)
-			}
-		}
+		go run(bot, controller, update, env)
 	}
 }
 
@@ -57,4 +48,19 @@ func configCommands(bot *tgbotapi.BotAPI) {
 
 	commandsConfig := tgbotapi.NewSetMyCommands(help, link)
 	bot.Send(commandsConfig)
+}
+
+
+func run(bot *tgbotapi.BotAPI, controller commands.Controller, update tgbotapi.Update, env configs.Enviroment) {
+	msgs := controller.HandleUpdate(update, env.BotName)
+
+	if msgs == nil {
+		return;
+	}
+
+	for _, msg := range msgs {
+		if _, err := bot.Send(msg); err != nil {
+			log.Println(err)
+		}
+	}
 }

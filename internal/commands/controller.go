@@ -1,9 +1,11 @@
 package commands
 
 import (
+	"database/sql"
 	"errors"
 	"log"
 	"strings"
+	"tabletop_matchmaker/internal/commands/getcollection"
 	"tabletop_matchmaker/internal/commands/help"
 	"tabletop_matchmaker/internal/commands/link"
 
@@ -11,6 +13,7 @@ import (
 )
 
 type Controller struct {
+	Database *sql.DB
 }
 
 func (c Controller) HandleUpdate(update tgbotapi.Update, botName string) []tgbotapi.Chattable {
@@ -44,7 +47,7 @@ func (c Controller) handleMessage(msg *tgbotapi.Message, botName string) []tgbot
 		return nil
 	}
 
-	return commandHandler.Run(msg)
+	return commandHandler.Run(msg, c.Database)
 }
 
 func (c Controller) handleCallbackQuery(update tgbotapi.Update) []tgbotapi.Chattable {
@@ -62,7 +65,7 @@ func (c Controller) handleCallbackQuery(update tgbotapi.Update) []tgbotapi.Chatt
 		return nil
 	}
 
-	return commandHandler.Callback(update.CallbackQuery)
+	return commandHandler.Callback(update.CallbackQuery, c.Database)
 }
 
 func (c Controller) getCommandHandler(command string, chatType string) (Command, error) {
@@ -76,16 +79,18 @@ func (c Controller) getCommandHandler(command string, chatType string) (Command,
 
 func (c Controller) getDefaultCommandHandler(command string) (Command, error) {
 	switch command {
-	case help.Name():
-		return help.Help{}, nil
-	}
+		case help.Name():
+			return help.Help{}, nil
+	}	
 	return nil, errors.New("unknown command")
 }
 
 func (c Controller) getPrivateCommandHandler(command string) (Command, error) {
 	switch command {
-	case link.Name():
-		return link.Link{}, nil
+		case link.Name():
+			return link.Link{}, nil
+		case getcollection.Name():
+			return getcollection.GetCollection{}, nil
 	}
 	return nil, errors.New("unknown command")
 }

@@ -3,7 +3,6 @@ package bgg
 import (
 	"context"
 	"fmt"
-	"strings"
 	"tabletop_matchmaker/internal/errors"
 
 	"github.com/fzerorubigd/gobgg"
@@ -28,10 +27,15 @@ func (bgg Bgg) FetchUser(username string) (*gobgg.User, error) {
 	return user, nil
 }
 
-func (bgg Bgg) ResolveAppeal(user *gobgg.User) string {
-	if user.FirstName != "" || user.LastName != "" {
-		return strings.Trim(user.FirstName+" "+user.LastName, " ")
+
+
+func (bgg Bgg) FetchCollection(username string) ([]gobgg.CollectionItem, error) {
+	api := gobgg.NewBGGClient()
+	collection, err := api.GetCollection(context.Background(), username)
+
+	if err != nil {
+		return nil, fmt.Errorf("BGG api error: %w", err)
 	}
 
-	return user.UserName
+	return collection, nil
 }

@@ -1,0 +1,19 @@
+## install golang-migrate
+https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
+
+### usage
+create migration
+
+```migrate create -ext sql -dir migrations -seq ${MIGATION_NAME}```
+
+up migration
+
+```export PG_NAME=root```
+
+```export PG_PASSWORD=root```
+
+```export DB_NAME=test```
+
+```export POSTGRESQL_URL=postgresql://${PG_NAME}:${PG_PASSWORD}@localhost:7432/${DB_NAME}?sslmode=disable```
+
+```migrate -database ${POSTGRESQL_URL} -path migrations up```
