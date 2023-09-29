@@ -81,6 +81,8 @@ func (c Controller) getDefaultCommandHandler(command string) (Command, error) {
 	switch command {
 		case help.Name():
 			return help.Help{}, nil
+		case getcollection.Name():
+			return getcollection.GetCollection{}, nil
 	}	
 	return nil, errors.New("unknown command")
 }
