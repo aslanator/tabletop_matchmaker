@@ -5,6 +5,5 @@ type CqData struct {
 }
 
 type PaginatorCqData interface {
-	GetPage() int
 	SetPage(page int)
 }

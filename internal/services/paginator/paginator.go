@@ -82,3 +82,14 @@ func (p Paginator[T]) GenKeyboardRow(page int, cqData types.PaginatorCqData) ([]
 
 	return row, nil
 }
+
+func (p Paginator[T]) GenKeyboard(page int, cqData types.PaginatorCqData) (*tgbotapi.InlineKeyboardMarkup, error) {
+	row, err := p.GenKeyboardRow(page, cqData)
+
+	if err != nil {
+		return nil, err
+	}
+
+	keyboardMarkup := tgbotapi.NewInlineKeyboardMarkup(row)
+	return &keyboardMarkup, nil
+}
