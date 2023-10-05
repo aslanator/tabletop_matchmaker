@@ -3,6 +3,7 @@ package bggfmt
 import (
 	"fmt"
 	"strings"
+	"tabletop_matchmaker/internal/services/gamescollection"
 
 	"github.com/fzerorubigd/gobgg"
 )
@@ -17,14 +18,14 @@ func (bgg BggFmt) ResolveAppeal(user *gobgg.User) string {
 	return user.UserName
 }
 
-func (bgg BggFmt) GenGameNamesList(collection []gobgg.CollectionItem) string {
-	if len(collection) == 0 {
+func (bgg BggFmt) GenGameNamesList(games []gamescollection.Game) string {
+	if len(games) == 0 {
 		return "В коллеции нету игр"
 	}
 
 	gameNamesList := ""
 
-	for _, item := range collection {
+	for _, item := range games {
 		gameNamesList += fmt.Sprintf("%s (%d)\n", item.Name, item.YearPublished)
 	}
 

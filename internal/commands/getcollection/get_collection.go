@@ -3,19 +3,20 @@ package getcollection
 import (
 	"database/sql"
 	"encoding/json"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"strconv"
 	"strings"
 	helpers_errors "tabletop_matchmaker/internal/helpers/errors"
-	"tabletop_matchmaker/internal/services/bgg"
 	"tabletop_matchmaker/internal/services/bggfmt"
+	"tabletop_matchmaker/internal/services/gamescollection"
 	"tabletop_matchmaker/internal/services/paginator"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type GetCollection struct {
 }
 
-func (getCollection GetCollection) Run(msg *tgbotapi.Message, _ *sql.DB) []tgbotapi.Chattable {
+func (getCollection GetCollection) Run(msg *tgbotapi.Message, db *sql.DB) []tgbotapi.Chattable {
 	attributesStr := msg.CommandArguments()
 	attributes := strings.Split(attributesStr, " ")
 	username := attributes[0]
@@ -35,7 +36,13 @@ func (getCollection GetCollection) Run(msg *tgbotapi.Message, _ *sql.DB) []tgbot
 		return []tgbotapi.Chattable{tgbotapi.NewMessage(msg.Chat.ID, text)}
 	}
 
-	messageText, keyboard, err := getCollection.prepareMessageTextAndKeyboard(username, page)
+	games, err := getCollection.getGamesFromBgg(db, username)
+
+	if err != nil {
+		return helpers_errors.UnexpectedChatErrorMessage(err, msg.Chat.ID)
+	}
+
+	messageText, keyboard, err := getCollection.prepareMessageTextAndKeyboard(games, username, page)
 
 	if err != nil {
 		return helpers_errors.UnexpectedChatErrorMessage(err, msg.Chat.ID)
@@ -47,7 +54,7 @@ func (getCollection GetCollection) Run(msg *tgbotapi.Message, _ *sql.DB) []tgbot
 	return []tgbotapi.Chattable{messageConfig}
 }
 
-func (getCollection GetCollection) Callback(cq *tgbotapi.CallbackQuery, _ *sql.DB) []tgbotapi.Chattable {
+func (getCollection GetCollection) Callback(cq *tgbotapi.CallbackQuery, db *sql.DB) []tgbotapi.Chattable {
 	var cqData CqData
 	err := json.Unmarshal([]byte(cq.Data), &cqData)
 	if err != nil {
@@ -59,7 +66,13 @@ func (getCollection GetCollection) Callback(cq *tgbotapi.CallbackQuery, _ *sql.D
 		return []tgbotapi.Chattable{tgbotapi.NewMessage(cq.Message.Chat.ID, text)}
 	}
 
-	messageText, keyboard, err := getCollection.prepareMessageTextAndKeyboard(cqData.Username, cqData.Page)
+	games, err := getCollection.getGamesFromDB(db, cqData.Username)
+
+	if err != nil {
+		return helpers_errors.UnexpectedChatErrorMessage(err, cq.Message.Chat.ID)
+	}
+
+	messageText, keyboard, err := getCollection.prepareMessageTextAndKeyboard(games, cqData.Username, cqData.Page)
 
 	if err != nil {
 		return helpers_errors.UnexpectedChatErrorMessage(err, cq.Message.Chat.ID)
@@ -68,21 +81,15 @@ func (getCollection GetCollection) Callback(cq *tgbotapi.CallbackQuery, _ *sql.D
 	return []tgbotapi.Chattable{tgbotapi.NewEditMessageTextAndMarkup(cq.Message.Chat.ID, cq.Message.MessageID, messageText, *keyboard)}
 }
 
-func (getCollection GetCollection) prepareMessageTextAndKeyboard(username string, page int) (string, *tgbotapi.InlineKeyboardMarkup, error) {
-	bggService := bgg.Bgg{}
+func (getCollection GetCollection) prepareMessageTextAndKeyboard(games []gamescollection.Game, username string, page int) (string, *tgbotapi.InlineKeyboardMarkup, error) {
 	bggFmt := bggfmt.BggFmt{}
 
-	collection, err := bggService.FetchCollection(username)
-	if err != nil {
-		return "", nil, err
-	}
-
-	if len(collection) == 0 {
+	if len(games) == 0 {
 		keyboard := tgbotapi.NewInlineKeyboardMarkup()
 		return "Пусто", &keyboard, nil
 	}
 
-	paginatorService := paginator.NewPaginator(collection, 20)
+	paginatorService := paginator.NewPaginator(games, 20)
 	pageItems, err := paginatorService.GetPage(page)
 
 	if err != nil {
@@ -100,6 +107,28 @@ func (getCollection GetCollection) prepareMessageTextAndKeyboard(username string
 
 	return messageText, keyboard, nil
 }
+
+func (getCollection GetCollection) getGamesFromBgg(db *sql.DB, username string) ([]gamescollection.Game, error) {
+	gamesCollection := gamescollection.GamesCollection{}
+	games, err := gamesCollection.GetGamesByUserName(db, username, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return games, nil
+}
+
+func (getCollection GetCollection) getGamesFromDB(db *sql.DB, username string) ([]gamescollection.Game, error) {
+	gamesCollection := gamescollection.GamesCollection{}
+	games, err := gamesCollection.GetGamesByUserName(db, username, true)
+	if err != nil {
+		return nil, err
+	}
+	
+	return games, nil
+}
+
+
 
 func Name() string {
 	return "getCollection"

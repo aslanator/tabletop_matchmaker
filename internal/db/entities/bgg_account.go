@@ -21,6 +21,17 @@ func Get_bgg_account(db *sql.DB, userId int64) (*BggAccount, error) {
 	return &bggAccount, nil
 }
 
+func GetUserId(db *sql.DB, username string) (int64, error) {
+	row := db.QueryRow("SELECT user_id FROM bgg_accounts WHERE LOWER(bgg_username) = LOWER($1) LIMIT 1;", username)
+
+	var userId int64
+	if err := row.Scan(&userId); err != nil {
+		log.Println(err.Error())
+		return 0, err
+	}
+	return userId, nil
+}
+
 func Upsert_into_bgg_account(db *sql.DB, userId int64, bggAccount string) (*BggAccount, error) {
 	sqlStatement := `
 	INSERT INTO bgg_accounts (user_id, bgg_username)
