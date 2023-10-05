@@ -1,73 +1,84 @@
 package paginator
 
 import (
-	"strconv"
-	"strings"
-
+	json2 "encoding/json"
+	"errors"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"math"
+	"tabletop_matchmaker/internal/helpers/keyboards"
+	"tabletop_matchmaker/internal/types"
 )
 
-const MAX_PAGE_SIZE int = 2000
-
-type Paginator struct {}
-
-func (paginator Paginator) genPageList(page int, pagesCount int) []int {
-	pageList := []int{}
-
-	if page > 1 {
-		pageList = append(pageList, page-1)
-	}
-
-	if page < pagesCount {
-		pageList = append(pageList, page+1)
-	}
-
-	return pageList
+type Paginator[T any] struct {
+	items      []T
+	count      int
+	pageSize   int
+	pagesCount int
 }
 
-func (paginator Paginator) genPageButton(page int, command string) tgbotapi.InlineKeyboardButton {
-	return tgbotapi.NewInlineKeyboardButtonData(strconv.Itoa(page), 
-	command + "|" + strconv.Itoa(page))
+func NewPaginator[T any](items []T, pageSize int) Paginator[T] {
+	count := len(items)
+	pagesCount := int(math.Ceil(float64(count) / float64(pageSize)))
+
+	return Paginator[T]{
+		items:      items,
+		count:      count,
+		pageSize:   pageSize,
+		pagesCount: pagesCount,
+	}
 }
 
-func (paginator Paginator) genPageButtons(pageList []int, command string) tgbotapi.InlineKeyboardMarkup {
-	buttons := []tgbotapi.InlineKeyboardButton {}
-
-	for _, page := range pageList {
-		buttons = append(buttons, paginator.genPageButton(page, command))
+func (p Paginator[T]) GetPage(page int) ([]T, error) {
+	if page > p.pagesCount {
+		return nil, errors.New("page does not exist")
 	}
-	row := tgbotapi.NewInlineKeyboardRow(buttons...)
 
-	return tgbotapi.NewInlineKeyboardMarkup(row)
+	offset := page - 1
+	start := offset * p.pageSize
+	end := start + p.pageSize
+	if end > p.count {
+		end = p.count
+	}
+
+	return p.items[start:end], nil
 }
 
-func (paginator Paginator) genPageKeyboardMarkup(page int, pagesCount int, command string) tgbotapi.InlineKeyboardMarkup {
-	pageList := paginator.genPageList(page, pagesCount)
-	return paginator.genPageButtons(pageList, command)
+func (p Paginator[T]) GetPagesCount() int {
+	return p.pagesCount
 }
 
-func (paginator Paginator) getPagesCount(text string) int {
-	collectionSize := len(text)
-	pagesCount := collectionSize / MAX_PAGE_SIZE
-	if collectionSize % MAX_PAGE_SIZE != 0 {
-		pagesCount++
-	}
-	return pagesCount
-}
+func (p Paginator[T]) GenKeyboardRow(page int, cqData types.PaginatorCqData) ([]tgbotapi.InlineKeyboardButton, error) {
+	row := tgbotapi.NewInlineKeyboardRow()
 
-// make function that return page message ends on line before maximum size and keyboard markup
-func (paginator Paginator) GenPageMessage(text string, page int, command string) (string, tgbotapi.InlineKeyboardMarkup) {
-	pagesCount := paginator.getPagesCount(text)
-	if page > pagesCount {
-		page = pagesCount
+	if p.pagesCount == 1 {
+		return row, nil
 	}
-	startIndex := (page - 1) * MAX_PAGE_SIZE
-	endIndex := page * MAX_PAGE_SIZE
-	if endIndex > len(text) {
-		endIndex = len(text)
+
+	if page-1 > 0 {
+		cqData.SetPage(page - 1)
+		json, err := json2.Marshal(cqData)
+
+		if err != nil {
+			return nil, fmt.Errorf("paginator error: %e", err)
+		}
+
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData(keyboards.LEFT_ARROW, string(json)))
+	} else {
+		row = append(row, keyboards.GenBlankButton())
 	}
-	pageText := text[startIndex:endIndex]
-	lastIndex := strings.LastIndex(pageText, "\n")
-	keyboardMarkup := paginator.genPageKeyboardMarkup(page, pagesCount, command)
-	return pageText[0:lastIndex], keyboardMarkup
+
+	if page+1 < p.pagesCount {
+		cqData.SetPage(page + 1)
+		json, err := json2.Marshal(cqData)
+
+		if err != nil {
+			return nil, fmt.Errorf("paginator error: %e", err)
+		}
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData(keyboards.RIGHT_ARROW, string(json)))
+	} else {
+		row = append(row, keyboards.GenBlankButton())
+	}
+
+	return row, nil
 }

@@ -2,12 +2,15 @@ package commands
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"log"
 	"strings"
 	"tabletop_matchmaker/internal/commands/getcollection"
 	"tabletop_matchmaker/internal/commands/help"
 	"tabletop_matchmaker/internal/commands/link"
+	errors2 "tabletop_matchmaker/internal/helpers/errors"
+	"tabletop_matchmaker/internal/types"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -52,17 +55,16 @@ func (c Controller) handleMessage(msg *tgbotapi.Message, botName string) []tgbot
 
 func (c Controller) handleCallbackQuery(update tgbotapi.Update) []tgbotapi.Chattable {
 	log.Println(update)
-	data := strings.Split(update.CallbackQuery.Data, "|")
+	var cqData types.CqData
+	err := json.Unmarshal([]byte(update.CallbackQuery.Data), &cqData)
 
-	if len(data) == 0 {
-		return nil
+	if err != nil {
+		return errors2.UnexpectedChatErrorMessage(err, update.CallbackQuery.Message.Chat.ID)
 	}
 
-	command := data[0]
-
-	commandHandler, err := c.getCommandHandler(command, update.CallbackQuery.Message.Chat.Type)
+	commandHandler, err := c.getCommandHandler(cqData.Command, update.CallbackQuery.Message.Chat.Type)
 	if err != nil {
-		return nil
+		return []tgbotapi.Chattable{tgbotapi.NewCallback(update.CallbackQuery.ID, "")}
 	}
 
 	return commandHandler.Callback(update.CallbackQuery, c.Database)
@@ -79,20 +81,22 @@ func (c Controller) getCommandHandler(command string, chatType string) (Command,
 
 func (c Controller) getDefaultCommandHandler(command string) (Command, error) {
 	switch command {
-		case help.Name():
-			return help.Help{}, nil
-		case getcollection.Name():
-			return getcollection.GetCollection{}, nil
-	}	
+	case help.Name():
+		return help.Help{}, nil
+	case getcollection.Name():
+		return getcollection.GetCollection{}, nil
+	}
 	return nil, errors.New("unknown command")
 }
 
 func (c Controller) getPrivateCommandHandler(command string) (Command, error) {
 	switch command {
-		case link.Name():
-			return link.Link{}, nil
-		case getcollection.Name():
-			return getcollection.GetCollection{}, nil
+	case help.Name():
+		return help.Help{}, nil
+	case link.Name():
+		return link.Link{}, nil
+	case getcollection.Name():
+		return getcollection.GetCollection{}, nil
 	}
 	return nil, errors.New("unknown command")
 }
