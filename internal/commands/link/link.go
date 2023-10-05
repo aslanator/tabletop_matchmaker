@@ -5,6 +5,7 @@ import (
 	json2 "encoding/json"
 	"errors"
 	"fmt"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"strings"
 	"tabletop_matchmaker/internal/db/entities"
 	internal_errors "tabletop_matchmaker/internal/errors"
@@ -13,26 +14,7 @@ import (
 	"tabletop_matchmaker/internal/helpers/markdown"
 	"tabletop_matchmaker/internal/services/bgg"
 	"tabletop_matchmaker/internal/services/bggfmt"
-	"tabletop_matchmaker/internal/types"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
-
-type CqData struct {
-	types.CqData
-	Confirmation bool    `json:"y"`
-	Username     *string `json:"u"`
-}
-
-func newCqData(confirmation bool, username *string) CqData {
-	return CqData{
-		CqData: types.CqData{
-			Command: Name(),
-		},
-		Confirmation: confirmation,
-		Username:     username,
-	}
-}
 
 type Link struct{}
 
